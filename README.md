@@ -1,5 +1,5 @@
 # Subscription Fatigue Tracker
-🔗 [Live Demo](https://your-project.vercel.app)
+🔗 [Live Demo](https://subscription-tracker-tau-sooty.vercel.app/)
 
 A capstone project for **Software Product Development (STY-4040)** — Cambrian College, IT Business Analysis Semester 2.
 
