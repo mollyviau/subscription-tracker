@@ -30,7 +30,6 @@ async function logOut() {
             <button className="bg-red-500 hover:bg-red-600 active:bg-red-700 text-white font-medium py-2 px-4 rounded-md transition-colors" onClick={() => logOut()}> Logout</button>
             </div>
 
-
         )}
         {error && <p>{error}</p>}
 
