@@ -25,13 +25,18 @@ function getRenewalDays(dateStr) {
   return days;
 }
 
-function SubscriptionList({ subscriptions, fetchSubscriptions }) {
-  const handleDelete = async (id) => {
+function SubscriptionList({ subscriptions, fetchSubscriptions, onEdit }) {
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Remove ${name}? This can't be undone.`)) return;
     const { error } = await supabase
       .from("subscriptions")
       .delete()
       .eq("id", id);
-    if (!error) fetchSubscriptions();
+    if (error) {
+      console.error("Error deleting subscription: ", error.message);
+      return;
+    }
+    fetchSubscriptions();
   };
 
   if (subscriptions.length === 0) {
@@ -51,7 +56,6 @@ function SubscriptionList({ subscriptions, fetchSubscriptions }) {
           sub.billing_cycle === "yearly"
             ? (parseFloat(sub.cost) / 12).toFixed(2)
             : parseFloat(sub.cost).toFixed(2);
-
         return (
           <div
             key={sub.id}
@@ -63,7 +67,6 @@ function SubscriptionList({ subscriptions, fetchSubscriptions }) {
             >
               {getInitial(sub.name)}
             </div>
-
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-white truncate">{sub.name}</p>
@@ -78,22 +81,29 @@ function SubscriptionList({ subscriptions, fetchSubscriptions }) {
                 </p>
               )}
             </div>
-
             {/* Badge placeholder */}
             <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-white/10 text-gray-400">
               Utility Score
             </span>
-
             {/* Cost */}
             <p className="text-white font-semibold w-16 text-right">
               ${displayCost}
             </p>
-
+            {/* Edit */}
+            <button
+              onClick={() => onEdit(sub)}
+              className="text-gray-600 hover:text-white transition-colors text-lg ml-1"
+              title="Edit"
+              aria-label={`Edit ${sub.name}`}
+            >
+              ✎
+            </button>
             {/* Delete */}
             <button
-              onClick={() => handleDelete(sub.id)}
-              className="text-gray-600 hover:text-red-400 transition-colors text-lg ml-1"
+              onClick={() => handleDelete(sub.id, sub.name)}
+              className="text-gray-600 hover:text-red-400 transition-colors text-lg"
               title="Delete"
+              aria-label={`Delete ${sub.name}`}
             >
               ✕
             </button>
@@ -105,4 +115,3 @@ function SubscriptionList({ subscriptions, fetchSubscriptions }) {
 }
 
 export default SubscriptionList;
-

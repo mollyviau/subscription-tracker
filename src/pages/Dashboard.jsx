@@ -6,6 +6,7 @@ import SubscriptionList from "../components/SubscriptionList";
 function Dashboard({ session }) {
   const [subscriptions, setSubscriptions] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingSub, setEditingSub] = useState(null);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -23,6 +24,13 @@ function Dashboard({ session }) {
     }
     setSubscriptions(data);
   }
+
+  function closeModal() {
+    setShowForm(false);
+    setEditingSub(null);
+  }
+
+  const modalOpen = showForm || editingSub !== null;
 
   const monthlyTotal = subscriptions.reduce((sum, sub) => {
     const cost = parseFloat(sub.cost);
@@ -68,6 +76,7 @@ function Dashboard({ session }) {
           </p>
         </div>
       </div>
+
       {/* Add Button - full width on mobile, inline on desktop */}
       <button
         onClick={() => setShowForm(true)}
@@ -75,6 +84,7 @@ function Dashboard({ session }) {
       >
         + Add subscription
       </button>
+
       {/* All subscriptions header */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-sm font-semibold text-gray-400">All subscriptions</p>
@@ -90,25 +100,35 @@ function Dashboard({ session }) {
       <SubscriptionList
         subscriptions={subscriptions}
         fetchSubscriptions={fetchSubscriptions}
+        onEdit={(sub) => setEditingSub(sub)}
       />
 
-      {/* Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
-          <div className="bg-[#13131f] rounded-2xl w-full max-w-lg p-6 relative">
+      {/* Modal (add + edit) */}
+      {modalOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-[#13131f] rounded-2xl w-full max-w-lg p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
-              onClick={() => setShowForm(false)}
+              onClick={closeModal}
               className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
+              aria-label="Close"
             >
               ✕
             </button>
-            <h2 className="text-lg font-bold mb-4">Add subscription</h2>
+            <h2 className="text-lg font-bold mb-4">
+              {editingSub ? `Edit ${editingSub.name}` : "Add subscription"}
+            </h2>
             <SubscriptionForm
+              key={editingSub?.id ?? "new"}
               session={session}
-              fetchSubscriptions={() => {
-                fetchSubscriptions();
-                setShowForm(false);
-              }}
+              fetchSubscriptions={fetchSubscriptions}
+              editingSub={editingSub}
+              onDone={closeModal}
             />
           </div>
         </div>
@@ -122,4 +142,3 @@ function Dashboard({ session }) {
 }
 
 export default Dashboard;
-

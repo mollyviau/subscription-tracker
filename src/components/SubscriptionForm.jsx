@@ -1,33 +1,52 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase.js";
+import { CATEGORIES } from "../lib/constants.js";
 
 const inputClass =
   "w-full bg-[#1a1a2e] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500 transition-colors";
 
-function SubscriptionForm({ session, fetchSubscriptions }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    cost: "",
-    billing_cycle: "monthly",
-    category: "",
-    next_billing_date: "",
-  });
+function SubscriptionForm({ session, fetchSubscriptions, editingSub, onDone }) {
+  const [formData, setFormData] = useState(
+    editingSub
+      ? {
+          name: editingSub.name,
+          cost: String(editingSub.cost), // input wants a string
+          billing_cycle: editingSub.billing_cycle,
+          category: editingSub.category,
+          next_billing_date: editingSub.next_billing_date ?? "",
+          usage: editingSub.usage,
+        }
+      : {
+          name: "",
+          cost: "",
+          billing_cycle: "monthly",
+          category: "",
+          next_billing_date: "",
+          usage: "monthly",
+        },
+  );
   const [error, setError] = useState(null);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const { error: submissionError } = await supabase
-      .from("subscriptions")
-      .insert([
-        {
-          name: formData.name,
-          cost: parseFloat(formData.cost),
-          billing_cycle: formData.billing_cycle,
-          category: formData.category,
-          next_billing_date: formData.next_billing_date,
-          user_id: session.user.id,
-        },
-      ]);
+
+    const payload = {
+      name: formData.name,
+      cost: parseFloat(formData.cost),
+      billing_cycle: formData.billing_cycle,
+      category: formData.category,
+      next_billing_date: formData.next_billing_date,
+      usage: formData.usage,
+    };
+
+    const { error: submissionError } = editingSub
+      ? await supabase
+          .from("subscriptions")
+          .update(payload)
+          .eq("id", editingSub.id)
+      : await supabase
+          .from("subscriptions")
+          .insert([{ ...payload, user_id: session.user.id }]);
 
     if (submissionError) {
       setError(submissionError.message);
@@ -39,7 +58,9 @@ function SubscriptionForm({ session, fetchSubscriptions }) {
         billing_cycle: "monthly",
         category: "",
         next_billing_date: "",
+        usage: "monthly",
       });
+      onDone?.();
     }
   }
 
@@ -56,6 +77,8 @@ function SubscriptionForm({ session, fetchSubscriptions }) {
       <div className="grid grid-cols-2 gap-3">
         <input
           type="number"
+          min="0"
+          step="0.01"
           placeholder="Cost"
           value={formData.cost}
           onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
@@ -73,13 +96,37 @@ function SubscriptionForm({ session, fetchSubscriptions }) {
           <option value="yearly">Yearly</option>
         </select>
       </div>
-      <input
-        type="text"
-        placeholder="Category"
+      <select
         value={formData.category}
         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
         className={inputClass}
-      />
+        required
+      >
+        <option value="" disabled>
+          Select a category
+        </option>
+        {CATEGORIES.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </select>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs text-gray-400 font-medium">
+          How often do you use it?
+        </label>
+        <select
+          value={formData.usage}
+          onChange={(e) => setFormData({ ...formData, usage: e.target.value })}
+          className={inputClass}
+        >
+          <option value="daily">Daily</option>
+          <option value="weekly">A few times a week</option>
+          <option value="monthly">A few times a month</option>
+          <option value="rarely">Every few months</option>
+          <option value="never">Rarely / forgot I had it</option>
+        </select>
+      </div>
       <div className="flex flex-col gap-1">
         <label className="text-xs text-gray-400 font-medium">
           Next Billing Date
@@ -98,7 +145,7 @@ function SubscriptionForm({ session, fetchSubscriptions }) {
         type="submit"
         className="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 transition-colors rounded-xl py-2.5 font-semibold text-white mt-1"
       >
-        Add subscription
+        {editingSub ? "Update subscription" : "Add subscription"}
       </button>
     </form>
   );
