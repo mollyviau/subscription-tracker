@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase.js";
 import { CATEGORIES } from "../lib/constants.js";
+import { logEvent } from "../lib/analytics.js";   // ← add this
 
 const inputClass =
   "w-full bg-[#1a1a2e] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500 transition-colors";
@@ -51,6 +52,19 @@ function SubscriptionForm({ session, fetchSubscriptions, editingSub, onDone }) {
     if (submissionError) {
       setError(submissionError.message);
     } else {
+      if (editingSub) {
+        logEvent("subscription_updated", {
+          subscription_id: editingSub.id,
+          usage_before: editingSub.usage,
+          usage_after: formData.usage,
+        });
+      } else {
+        logEvent("subscription_created", {
+          category: formData.category,
+          billing_cycle: formData.billing_cycle,
+          usage: formData.usage,
+        });
+      }
       fetchSubscriptions();
       setFormData({
         name: "",

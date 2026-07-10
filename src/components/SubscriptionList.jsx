@@ -1,4 +1,6 @@
 import { supabase } from "../lib/supabase.js";
+import { getUtilityScore, REVIEW_THRESHOLD } from "../lib/utilityScore.js";
+import { logEvent } from "../lib/analytics.js";
 
 function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : "?";
@@ -28,14 +30,36 @@ function getRenewalDays(dateStr) {
 function SubscriptionList({ subscriptions, fetchSubscriptions, onEdit }) {
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Remove ${name}? This can't be undone.`)) return;
+
+    // Capture details BEFORE deleting — unrecoverable afterward
+    const sub = subscriptions.find((s) => s.id === id);
+    const utility = sub ? getUtilityScore(sub) : null;
+    const monthlyCost = sub
+      ? sub.billing_cycle === "yearly"
+        ? parseFloat(sub.cost) / 12
+        : parseFloat(sub.cost)
+      : null;
+
     const { error } = await supabase
       .from("subscriptions")
       .delete()
       .eq("id", id);
+
     if (error) {
       console.error("Error deleting subscription: ", error.message);
       return;
     }
+
+    logEvent("subscription_deleted", {
+      subscription_id: id,
+      category: sub?.category ?? null,
+      usage: sub?.usage ?? null,
+      monthly_cost: monthlyCost,
+      utility_score: utility?.score ?? null,
+      utility_label: utility?.label ?? null,
+      was_flagged: utility ? utility.score <= REVIEW_THRESHOLD : null,
+    });
+
     fetchSubscriptions();
   };
 
@@ -56,6 +80,7 @@ function SubscriptionList({ subscriptions, fetchSubscriptions, onEdit }) {
           sub.billing_cycle === "yearly"
             ? (parseFloat(sub.cost) / 12).toFixed(2)
             : parseFloat(sub.cost).toFixed(2);
+        const utility = getUtilityScore(sub);
         return (
           <div
             key={sub.id}
@@ -81,9 +106,12 @@ function SubscriptionList({ subscriptions, fetchSubscriptions, onEdit }) {
                 </p>
               )}
             </div>
-            {/* Badge placeholder */}
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full border border-white/10 text-gray-400">
-              Utility Score
+            {/* Utility score badge */}
+            <span
+              className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${utility.color}`}
+              title={`~$${utility.costPerUse.toFixed(2)} per use`}
+            >
+              {utility.label} · {utility.score}
             </span>
             {/* Cost */}
             <p className="text-white font-semibold w-16 text-right">
