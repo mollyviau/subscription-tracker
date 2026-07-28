@@ -28,7 +28,7 @@ function LoginPage() {
         }
         @keyframes float2 {
           0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.18 }
-          50% { transform: translate(-40px, -40px) scale(1.2; opacity: 0.35); }
+          50% { transform: translate(-40px, -40px) scale(1.2); opacity: 0.35; }
         }
       `}</style>
 
