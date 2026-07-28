@@ -9,14 +9,36 @@ function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
+  const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    const { error: signupError } = await supabase.auth.signUp({
+    setError(null);
+    setSubmitting(true);
+
+    const { data, error: signupError } = await supabase.auth.signUp({
       email,
       password,
     });
-    if (signupError) setError(signupError.message);
+
+    setSubmitting(false);
+
+    if (signupError) {
+      setError(signupError.message);
+      return;
+    }
+
+    // Supabase returns a user with an empty identities array when the email is
+    // already registered. This is deliberate — it prevents account enumeration
+    // — but without handling it we'd promise a confirmation email that never
+    // arrives.
+    if (data?.user && data.user.identities?.length === 0) {
+      setError("That email is already registered. Try logging in instead.");
+      return;
+    }
+
+    setSent(true);
   }
 
   return (
@@ -27,10 +49,11 @@ function SignupPage() {
           50% { transform: translate(-50%, -70%) scale(1.2); opacity: 0.35; }
         }
         @keyframes float2 {
-          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.18 }
-          50% { transform: translate(-40px, -40px) scale(1.2; opacity: 0.35); }
+          0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.18; }
+          50% { transform: translate(-40px, -40px) scale(1.2); opacity: 0.35; }
         }
       `}</style>
+
       {/* Gradient orbs */}
       <div
         className="absolute top-1/4 left-1/2 w-[500px] h-[500px] bg-purple-700 rounded-full opacity-20 blur-[120px] pointer-events-none"
@@ -57,43 +80,98 @@ function SignupPage() {
       {/* Card */}
       <div className="w-full max-w-sm relative z-10">
         <div className="bg-[#13131f] border border-white/5 rounded-2xl p-8 flex flex-col gap-4">
-          <div className="mb-2">
-            <h2 className="text-2xl font-bold text-white">Create an account</h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Start tracking your subscriptions
-            </p>
-          </div>
-          <input
-            className={inputClass}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-          />
-          <input
-            className={inputClass}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-          />
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button
-            className="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 transition-colors rounded-xl py-2.5 font-semibold text-white mt-1"
-            type="submit"
-            onClick={handleSubmit}
-          >
-            Sign up
-          </button>
-          <p className="text-center text-sm text-gray-500">
-            Already have an account?{" "}
-            <Link
-              to="/login"
-              className="text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              Log in
-            </Link>
-          </p>
+          {sent ? (
+            /* ---------- Confirmation sent ---------- */
+            <div className="flex flex-col gap-4 text-center py-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-purple-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <h2 className="text-2xl font-bold text-white">
+                  Check your email
+                </h2>
+                <p className="text-sm text-gray-400 mt-2 leading-relaxed">
+                  We sent a confirmation link to{" "}
+                  <span className="text-white font-medium break-all">
+                    {email}
+                  </span>
+                  . Click it to activate your account.
+                </p>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                Nothing after a few minutes? Check your spam folder.
+              </p>
+
+              <Link
+                to="/login"
+                className="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 transition-colors rounded-xl py-2.5 font-semibold text-white mt-1 block text-center"
+              >
+                Go to login
+              </Link>
+            </div>
+          ) : (
+            /* ---------- Signup form ---------- */
+            <>
+              <div className="mb-2">
+                <h2 className="text-2xl font-bold text-white">
+                  Create an account
+                </h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  Start tracking your subscriptions
+                </p>
+              </div>
+
+              <input
+                className={inputClass}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+              />
+              <input
+                className={inputClass}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+              />
+
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+
+              <button
+                className="w-full bg-purple-600 hover:bg-purple-500 active:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-xl py-2.5 font-semibold text-white mt-1"
+                type="submit"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? "Creating account…" : "Sign up"}
+              </button>
+
+              <p className="text-center text-sm text-gray-500">
+                Already have an account?{" "}
+                <Link
+                  to="/login"
+                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                >
+                  Log in
+                </Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
