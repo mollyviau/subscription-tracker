@@ -147,6 +147,7 @@ function SubscriptionForm({ session, fetchSubscriptions, editingSub, onDone }) {
         </label>
         <input
           type="date"
+          min={editingSub ? undefined : new Date().toISOString().slice(0, 10)}
           value={formData.next_billing_date}
           onChange={(e) =>
             setFormData({ ...formData, next_billing_date: e.target.value })
