@@ -31,7 +31,7 @@ function Dashboard({ session }) {
       console.error("Error fetching subscriptions: ", error.message);
       return;
     }
-    setSubscriptions(data);
+    setOwnSubscriptions(data);
   }
 
   function closeModal() {

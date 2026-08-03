@@ -14,23 +14,23 @@ export function useDemo() {
 }
 
 export function DemoProvider({ children }) {
-  const [subscriptions, setSubscriptions] = useState(buildDemoSubscriptions);
+  const [subscriptions, setOwnSubscriptions] = useState(buildDemoSubscriptions);
 
   const addSubscription = (payload) =>
-    setSubscriptions((prev) => [
+    setOwnSubscriptions((prev) => [
       ...prev,
       { ...payload, id: `demo-${Date.now()}` },
     ]);
 
   const updateSubscription = (id, payload) =>
-    setSubscriptions((prev) =>
+    setOwnSubscriptions((prev) =>
       prev.map((sub) => (sub.id === id ? { ...sub, ...payload } : sub)),
     );
 
   const deleteSubscription = (id) =>
-    setSubscriptions((prev) => prev.filter((sub) => sub.id !== id));
+    setOwnSubscriptions((prev) => prev.filter((sub) => sub.id !== id));
 
-  const reset = () => setSubscriptions(buildDemoSubscriptions());
+  const reset = () => setOwnSubscriptions(buildDemoSubscriptions());
 
   return (
     <DemoContext.Provider
