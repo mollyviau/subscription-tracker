@@ -66,7 +66,7 @@ function Dashboard({ session }) {
     }, {}),
   ).sort((a, b) => b[1] - a[1]);
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-white px-8 py-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#0a0a12] text-white px-4 sm:px-6 md:px-8 py-6 max-w-5xl mx-auto">
       {/* Header */}
       <p className="text-cyan-400 text-xs font-semibold tracking-widest uppercase mb-1">
         Subscription Hub
