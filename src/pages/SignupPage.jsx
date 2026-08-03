@@ -6,6 +6,7 @@ const inputClass =
   "w-full bg-[#1a1a2e] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500 transition-colors [color-scheme:dark]";
 
 function SignupPage() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -15,11 +16,23 @@ function SignupPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
+
+    // Supabase validates email and password server-side, but it accepts any
+    // metadata we send without checking it, so the name is guarded here.
+    if (!fullName.trim()) {
+      setError("Please enter your name.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { data, error: signupError } = await supabase.auth.signUp({
       email,
       password,
+      // Stored on auth.users.raw_user_meta_data; read back as
+      // session.user.user_metadata.full_name. Set at signup and survives
+      // email confirmation, so it's available the first time they log in.
+      options: { data: { full_name: fullName.trim() } },
     });
 
     setSubmitting(false);
@@ -137,10 +150,19 @@ function SignupPage() {
 
               <input
                 className={inputClass}
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Full name"
+                autoComplete="name"
+              />
+              <input
+                className={inputClass}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email"
+                autoComplete="email"
               />
               <input
                 className={inputClass}
@@ -148,6 +170,7 @@ function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
+                autoComplete="new-password"
               />
 
               {error && <p className="text-red-400 text-sm">{error}</p>}
