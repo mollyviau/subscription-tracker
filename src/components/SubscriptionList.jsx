@@ -1,23 +1,8 @@
 import { supabase } from "../lib/supabase.js";
 import { getUtilityScore, REVIEW_THRESHOLD } from "../lib/utilityScore.js";
 import { logEvent } from "../lib/analytics.js";
-
-function getInitial(name) {
-  return name ? name.charAt(0).toUpperCase() : "?";
-}
-
-function getAvatarColor(name) {
-  const colors = [
-    "bg-purple-700",
-    "bg-cyan-700",
-    "bg-indigo-700",
-    "bg-pink-700",
-    "bg-orange-700",
-    "bg-teal-700",
-  ];
-  const index = name ? name.charCodeAt(0) % colors.length : 0;
-  return colors[index];
-}
+import { getInitial, getAvatarColor } from "../lib/avatar.js";
+import { useDemo } from "../context/DemoContext.jsx";
 
 function getRenewalDays(dateStr) {
   if (!dateStr) return null;
@@ -28,8 +13,17 @@ function getRenewalDays(dateStr) {
 }
 
 function SubscriptionList({ subscriptions, fetchSubscriptions, onEdit }) {
+  // null outside <DemoProvider>; the demo API inside it
+  const demo = useDemo();
+
   const handleDelete = async (id, name) => {
     if (!window.confirm(`Remove ${name}? This can't be undone.`)) return;
+
+    // Demo mode: mutate local state, skip Supabase and event logging
+    if (demo) {
+      demo.deleteSubscription(id);
+      return;
+    }
 
     // Capture details BEFORE deleting — unrecoverable afterward
     const sub = subscriptions.find((s) => s.id === id);

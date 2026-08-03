@@ -4,17 +4,24 @@ import SubscriptionForm from "../components/SubscriptionForm";
 import SubscriptionList from "../components/SubscriptionList";
 import { getUtilityScore, REVIEW_THRESHOLD } from "../lib/utilityScore.js";
 import { logEvent } from "../lib/analytics.js"; 
+import { useDemo } from "../context/DemoContext.jsx";
+
+
 function Dashboard({ session }) {
-  const [subscriptions, setSubscriptions] = useState([]);
+  const demo = useDemo();
+  const [ownSubscriptions, setOwnSubscriptions] = useState([]);
+  const subscriptions = demo ? demo.subscriptions : ownSubscriptions;
   const [showForm, setShowForm] = useState(false);
   const [editingSub, setEditingSub] = useState(null);
 
   useEffect(() => {
+    if (demo) return;
     fetchSubscriptions();
     logEvent("dashboard_viewed");
   }, []);
 
   async function fetchSubscriptions() {
+    if (demo) return;
     const { data, error } = await supabase
       .from("subscriptions")
       .select("*")

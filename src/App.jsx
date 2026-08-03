@@ -4,7 +4,9 @@ import { supabase } from "./lib/supabase";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import Dashboard from "./pages/Dashboard";
+import AboutPage from "./pages/AboutPage";
 import Navbar from "./components/Navbar";
+import { DemoProvider } from "./context/DemoContext";
 
 // Root Component, handles auth-gated routing
 function App() {
@@ -31,9 +33,14 @@ function App() {
   }, []);
 
   // blocks rendering until the initial getSession() check resolves
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a12] flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
 
-  // wraps everything in BrowserRouter, and defines 3 routes
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-[#0a0a12]">
@@ -47,6 +54,20 @@ function App() {
             path="/signup"
             element={!session ? <SignupPage /> : <Navigate to="/" />}
           />
+
+          {/* Public — no auth gate */}
+          <Route path="/about" element={<AboutPage />} />
+
+          {/* Demo — no session, no database. DemoProvider supplies the data. */}
+          <Route
+            path="/demo"
+            element={
+              <DemoProvider>
+                <Dashboard />
+              </DemoProvider>
+            }
+          />
+
           <Route
             path="/"
             element={

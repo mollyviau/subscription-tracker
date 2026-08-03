@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase.js";
 import { CATEGORIES } from "../lib/constants.js";
-import { logEvent } from "../lib/analytics.js";   // ← add this
+import { logEvent } from "../lib/analytics.js";
+import { useDemo } from "../context/DemoContext.jsx";
 
 const inputClass =
   "w-full bg-[#1a1a2e] border border-white/10 rounded-xl px-3 py-2 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-purple-500 transition-colors";
@@ -27,7 +28,7 @@ function SubscriptionForm({ session, fetchSubscriptions, editingSub, onDone }) {
         },
   );
   const [error, setError] = useState(null);
-
+  const demo = useDemo();
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -39,6 +40,16 @@ function SubscriptionForm({ session, fetchSubscriptions, editingSub, onDone }) {
       next_billing_date: formData.next_billing_date,
       usage: formData.usage,
     };
+    
+
+    // Demo mode: mutate local state, never touch Supabase
+    if (demo) {
+      if (editingSub) demo.updateSubscription(editingSub.id, payload);
+      else demo.addSubscription(payload);
+      onDone?.();
+      return;
+    }
+
 
     const { error: submissionError } = editingSub
       ? await supabase
